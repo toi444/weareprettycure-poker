@@ -1113,8 +1113,8 @@ def community_page():
                                 <div style="display: flex; align-items: center; margin: 5px 0;">
                                     <span style="color: {color}; font-size: 20px; width: 40px;">{medal}</span>
                                     <span style="flex: 1;">
-                                        <b>{player}</b> - {profit:,} P
-                                        <small style="opacity: 0.7;">({games}戦, 平均{int(avg):,}P)</small>
+                                        <b>{player}</b> - {'+' if profit >= 0 else ''}{profit:,} P
+                                        <small style="opacity: 0.7;">({games}戦, 平均{'+' if avg >= 0 else ''}{int(avg):,}P)</small>
                                     </span>
                                 </div>
                             """, unsafe_allow_html=True)
