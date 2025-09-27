@@ -1177,8 +1177,6 @@ def community_page():
                         total_hours = game_df['play_hours'].sum()
                         
                         st.metric("総ゲーム数", f"{total_games} 回")
-                        st.metric("総収支", f"{int(total_result):,} P")
-                        st.metric("平均収支", f"{int(avg_result):,} P")
                         st.metric("総プレイ時間", f"{total_hours:.1f} 時間")
                         
                         # 勝率
