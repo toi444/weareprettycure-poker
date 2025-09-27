@@ -412,10 +412,18 @@ def game_report_page():
                         st.write(f"⏱️ プレイ時間: {row['play_hours']}時間")
                     
                     with col2:
-                        if row['result'] >= 10000:
+                        if row['result'] >= 30000:
+                            st.success("🔥 超大勝ち！")
+                        elif row['result'] >= 20000:
                             st.success("大勝ち！")
+                        elif row['result'] >= 10000:
+                            st.success("好調！")
+                        elif row['result'] <= -30000:
+                            st.error("大敗...")
+                        elif row['result'] <= -20000:
+                            st.error("大負け")
                         elif row['result'] <= -10000:
-                            st.error("大負け！")
+                            st.error("不調")
                     
                     with col3:
                         actual_idx = df[df['player'] == st.session_state.username].sort_values('datetime', ascending=False).head(3).index[idx]
