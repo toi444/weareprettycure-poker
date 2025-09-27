@@ -309,10 +309,6 @@ def login_page():
                         st.rerun()
                     else:
                         st.error("❌ ユーザー名またはパスワードが正しくありません")
-            
-            with st.expander("📋 登録ユーザー一覧"):
-                st.info("**管理者:** admin (pass: admin123)")
-                st.info("**プレイヤー:** player1～player8 (pass: pass1～pass8)")
 
 def game_report_page():
     """ゲームレポートページ"""
