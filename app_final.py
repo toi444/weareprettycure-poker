@@ -1607,7 +1607,7 @@ def admin_page():
         edited_df = st.data_editor(
             users_df,
             column_config={
-                "username": st.column_config.TextColumn("ユーザー名", disabled=True),
+                "username": st.column_config.TextColumn("ユーザー名"),
                 "password": st.column_config.TextColumn("パスワード"),
                 "role": st.column_config.SelectboxColumn("権限", options=["admin", "player"]),
                 "active": st.column_config.CheckboxColumn("アクティブ")
