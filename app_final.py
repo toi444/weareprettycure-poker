@@ -1060,7 +1060,7 @@ def community_page():
                     <b>{latest_winner['player']}</b>さん
                 </p>
                 <p style="margin: 5px 0; font-size: 16px;">
-                    {latest_winner['hand_type']} - {int(latest_winner['amount']):,} P
+                    {latest_winner['hand_type']} - +{int(latest_winner['amount']):,} P
                 </p>
                 <p style="margin: 5px 0; font-size: 14px; opacity: 0.9;">
                     Hand: {latest_winner.get('hand_cards', 'N/A')} | Board: {latest_winner.get('table_cards', 'N/A')}
