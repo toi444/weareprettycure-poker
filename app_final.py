@@ -1187,10 +1187,6 @@ def community_page():
                         st.metric("総ゲーム数", f"{total_games} 回")
                         st.metric("総プレイ時間", f"{total_hours:.1f} 時間")
                         
-                        # 勝率
-                        wins = (game_df['result'] > 0).sum()
-                        win_rate = (wins / total_games * 100) if total_games > 0 else 0
-                        st.metric("全体勝率", f"{win_rate:.1f}%")
                     else:
                         st.info("データがありません")
                 else:
