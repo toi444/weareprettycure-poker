@@ -1678,8 +1678,53 @@ def lesson_page():
                 }
             }
             
+
+            
             # 選択されたレンジを取得
             selected_range = hand_ranges.get(position, {}).get(style, {"raise": [], "call": []})
+            
+            # 統計情報（スタイル選択の下に配置）
+            total_hands = 169
+            raise_hands = len(selected_range.get("raise", []))
+            call_hands = len(selected_range.get("call", []))
+            play_percentage = ((raise_hands + call_hands) / total_hands) * 100
+            
+            # スマホ対応の統計表示
+            st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            border-radius: 10px;
+                            padding: 10px;
+                            margin: 15px 0;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: space-around; align-items: center;">
+                        <div style="text-align: center; flex: 1;">
+                            <div style="color: white; font-size: 10px; opacity: 0.9;">レイズ</div>
+                            <div style="color: white; font-size: 18px; font-weight: bold;">{raise_hands}</div>
+                            <div style="color: white; font-size: 8px; opacity: 0.8;">ハンド</div>
+                        </div>
+                        <div style="width: 1px; height: 40px; background: rgba(255,255,255,0.3);"></div>
+                        <div style="text-align: center; flex: 1;">
+                            <div style="color: white; font-size: 10px; opacity: 0.9;">コール</div>
+                            <div style="color: white; font-size: 18px; font-weight: bold;">{call_hands}</div>
+                            <div style="color: white; font-size: 8px; opacity: 0.8;">ハンド</div>
+                        </div>
+                        <div style="width: 1px; height: 40px; background: rgba(255,255,255,0.3);"></div>
+                        <div style="text-align: center; flex: 1;">
+                            <div style="color: white; font-size: 10px; opacity: 0.9;">参加率</div>
+                            <div style="color: white; font-size: 18px; font-weight: bold;">{play_percentage:.1f}%</div>
+                            <div style="background: rgba(255,255,255,0.2); 
+                                        height: 3px; 
+                                        border-radius: 2px; 
+                                        margin: 5px 10px 0 10px;">
+                                <div style="background: white; 
+                                            height: 100%; 
+                                            width: {play_percentage}%; 
+                                            border-radius: 2px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
             
             # ハンドマトリックス表示
             st.markdown(f"#### {position} - {style}スタイル")
@@ -1687,15 +1732,16 @@ def lesson_page():
             # カードランク
             ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
             
-            # HTMLテーブル作成
-            html = '<table style="border-collapse: collapse; margin: 20px auto;">'
-            html += '<tr><th style="padding: 8px;"></th>'
+            # HTMLテーブル作成（スマホ対応サイズ）
+            html = '<div style="overflow-x: auto; max-width: 100%;">'
+            html += '<table style="border-collapse: collapse; margin: 10px auto; font-size: 10px;">'
+            html += '<tr><th style="padding: 3px; font-size: 9px;"></th>'
             for rank in ranks:
-                html += f'<th style="padding: 8px; font-weight: bold;">{rank}</th>'
+                html += f'<th style="padding: 3px; font-weight: bold; font-size: 9px;">{rank}</th>'
             html += '</tr>'
             
             for i, row_rank in enumerate(ranks):
-                html += f'<tr><th style="padding: 8px; font-weight: bold;">{row_rank}</th>'
+                html += f'<tr><th style="padding: 3px; font-weight: bold; font-size: 9px;">{row_rank}</th>'
                 for j, col_rank in enumerate(ranks):
                     if i < j:  # suited（上半分）
                         hand = f"{row_rank}{col_rank}s"
@@ -1715,25 +1761,13 @@ def lesson_page():
                         color = "#e0e0e0"  # グレー
                         text_color = "#999"
                     
-                    html += f'<td style="background-color: {color}; color: {text_color}; padding: 8px; border: 1px solid #ccc; text-align: center; font-size: 11px; width: 45px; height: 45px; font-weight: bold;">{hand}</td>'
+                    # セルサイズを小さく調整
+                    html += f'<td style="background-color: {color}; color: {text_color}; padding: 2px; border: 1px solid #ccc; text-align: center; font-size: 8px; width: 25px; height: 25px; font-weight: bold;">{hand}</td>'
                 html += '</tr>'
             html += '</table>'
+            html += '</div>'
             
             st.markdown(html, unsafe_allow_html=True)
-            
-            # 統計情報
-            total_hands = 169
-            raise_hands = len(selected_range.get("raise", []))
-            call_hands = len(selected_range.get("call", []))
-            play_percentage = ((raise_hands + call_hands) / total_hands) * 100
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("レイズハンド数", f"{raise_hands}手")
-            with col2:
-                st.metric("コールハンド数", f"{call_hands}手")
-            with col3:
-                st.metric("参加率", f"{play_percentage:.1f}%")
     
     with tabs[1]:
         st.markdown("### 🎲 確率計算機能")
@@ -1839,98 +1873,227 @@ def lesson_page():
         
         with calc_tabs[1]:
             st.markdown("#### ⚔️ ハンド vs ハンド勝率計算")
-            st.info("プリフロップでの勝率を簡易計算します")
+            st.info("プリフロップでの代表的なマッチアップの勝率を表示します")
             
-            # 改善されたUI
+            # プリフロップ勝率データベース（実際の値）
+            matchup_database = {
+                # ペア vs ペア
+                ("AA", "KK"): (81, 19), ("AA", "QQ"): (81, 19), ("AA", "JJ"): (81, 19),
+                ("AA", "TT"): (81, 19), ("AA", "99"): (81, 19), ("AA", "88"): (81, 19),
+                ("AA", "77"): (81, 19), ("AA", "66"): (81, 19), ("AA", "55"): (81, 19),
+                ("AA", "44"): (81, 19), ("AA", "33"): (81, 19), ("AA", "22"): (81, 19),
+                ("KK", "QQ"): (81, 19), ("KK", "JJ"): (81, 19), ("KK", "TT"): (81, 19),
+                ("QQ", "JJ"): (81, 19), ("QQ", "TT"): (81, 19), ("JJ", "TT"): (81, 19),
+                
+                # ペア vs 高カード
+                ("AA", "AKs"): (87, 12), ("AA", "AKo"): (93, 7),
+                ("AA", "AQs"): (87, 12), ("AA", "AQo"): (93, 7),
+                ("AA", "KQs"): (84, 16), ("AA", "KQo"): (87, 13),
+                ("AA", "72o"): (88, 12), ("AA", "32o"): (88, 12),
+                
+                ("KK", "AKs"): (66, 34), ("KK", "AKo"): (70, 30),
+                ("KK", "AQs"): (71, 29), ("KK", "AQo"): (74, 26),
+                ("KK", "KQs"): (82, 18), ("KK", "KQo"): (86, 14),
+                
+                ("QQ", "AKs"): (54, 46), ("QQ", "AKo"): (57, 43),
+                ("QQ", "AQs"): (67, 33), ("QQ", "AQo"): (71, 29),
+                ("QQ", "KQs"): (67, 33), ("QQ", "KQo"): (71, 29),
+                
+                ("JJ", "AKs"): (54, 46), ("JJ", "AKo"): (57, 43),
+                ("JJ", "AQs"): (54, 46), ("JJ", "AQo"): (57, 43),
+                
+                ("TT", "AKs"): (54, 46), ("TT", "AKo"): (57, 43),
+                ("99", "AKs"): (52, 48), ("99", "AKo"): (55, 45),
+                ("88", "AKs"): (52, 48), ("88", "AKo"): (55, 45),
+                ("77", "AKs"): (50, 50), ("77", "AKo"): (52, 48),
+                ("66", "AKs"): (50, 50), ("66", "AKo"): (52, 48),
+                ("55", "AKs"): (52, 48), ("55", "AKo"): (55, 45),
+                ("44", "AKs"): (50, 50), ("44", "AKo"): (52, 48),
+                ("33", "AKs"): (50, 50), ("33", "AKo"): (52, 48),
+                ("22", "AKs"): (50, 50), ("22", "AKo"): (52, 48),
+                
+                # 高カード vs 高カード
+                ("AKs", "AQs"): (70, 30), ("AKo", "AQo"): (74, 26),
+                ("AKs", "KQs"): (62, 38), ("AKo", "KQo"): (65, 35),
+                ("AKs", "QJs"): (62, 38), ("AKo", "QJo"): (65, 35),
+                ("AKs", "JTs"): (60, 40), ("AKo", "JTo"): (63, 37),
+                ("AKs", "76s"): (60, 40), ("AKo", "76o"): (63, 37),
+                ("AKs", "72o"): (67, 33), ("AKo", "72o"): (67, 33),
+                
+                ("AQs", "KQs"): (67, 33), ("AQo", "KQo"): (70, 30),
+                ("AQs", "QJs"): (68, 32), ("AQo", "QJo"): (71, 29),
+                ("AQs", "JTs"): (60, 40), ("AQo", "JTo"): (63, 37),
+                
+                ("KQs", "QJs"): (68, 32), ("KQo", "QJo"): (71, 29),
+                ("KQs", "JTs"): (60, 40), ("KQo", "JTo"): (63, 37),
+            }
+            
             st.markdown("---")
+            
+            # 選択UI
             col1, col2 = st.columns(2)
+            
+            # よく使われるハンドのリスト
+            common_hands = [
+                "AA", "KK", "QQ", "JJ", "TT", "99", "88", "77", "66", "55", "44", "33", "22",
+                "AKs", "AKo", "AQs", "AQo", "AJs", "AJo", "ATs", "ATo",
+                "KQs", "KQo", "KJs", "KJo", "KTs", "KTo",
+                "QJs", "QJo", "QTs", "QTo",
+                "JTs", "JTo", "J9s", "J9o",
+                "T9s", "T9o", "T8s", "T8o",
+                "98s", "98o", "87s", "87o", "76s", "76o", "65s", "65o",
+                "54s", "54o", "43s", "43o", "32s", "32o",
+                "72o", "62o", "52o", "42o", "32o"
+            ]
             
             with col1:
                 st.markdown("### 🎯 **自分のハンド**")
-                my_hand_type = st.radio(
-                    "ハンドタイプ",
-                    ["ポケットペア", "スーテッド", "オフスート"],
-                    key="my_type",
-                    horizontal=True
+                my_hand = st.selectbox(
+                    "ハンドを選択",
+                    common_hands,
+                    key="my_hand_select"
                 )
                 
-                if my_hand_type == "ポケットペア":
-                    my_rank = st.selectbox("ランク", ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'], key="my_pair")
-                    my_display = f"{my_rank}{my_rank}"
-                else:
-                    col_r1, col_r2 = st.columns(2)
-                    with col_r1:
-                        my_rank1 = st.selectbox("ランク1", ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'], key="my_r1")
-                    with col_r2:
-                        my_rank2 = st.selectbox("ランク2", ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'], key="my_r2", index=1)
-                    suffix = "s" if my_hand_type == "スーテッド" else "o"
-                    my_display = f"{my_rank1}{my_rank2}{suffix}"
+                # ハンド表示
+                if len(my_hand) == 2:  # ペア
+                    display_hand = f"{my_hand[0]}♠ {my_hand[1]}♥"
+                    hand_type = "ポケットペア"
+                elif my_hand[-1] == 's':  # スーテッド
+                    display_hand = f"{my_hand[0]}♠ {my_hand[1]}♠"
+                    hand_type = "スーテッド"
+                else:  # オフスート
+                    display_hand = f"{my_hand[0]}♠ {my_hand[1]}♥"
+                    hand_type = "オフスート"
+                
+                st.info(f"**{display_hand}** ({hand_type})")
             
             with col2:
                 st.markdown("### 👤 **相手のハンド**")
-                opp_hand_type = st.radio(
-                    "ハンドタイプ",
-                    ["ポケットペア", "スーテッド", "オフスート"],
-                    key="opp_type",
-                    horizontal=True
+                opp_hand = st.selectbox(
+                    "ハンドを選択",
+                    common_hands,
+                    key="opp_hand_select",
+                    index=13  # デフォルトでAKs
                 )
                 
-                if opp_hand_type == "ポケットペア":
-                    opp_rank = st.selectbox("ランク", ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'], key="opp_pair", index=12)
-                    opp_display = f"{opp_rank}{opp_rank}"
-                else:
-                    col_r1, col_r2 = st.columns(2)
-                    with col_r1:
-                        opp_rank1 = st.selectbox("ランク1", ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'], key="opp_r1", index=6)
-                    with col_r2:
-                        opp_rank2 = st.selectbox("ランク2", ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'], key="opp_r2", index=7)
-                    suffix = "s" if opp_hand_type == "スーテッド" else "o"
-                    opp_display = f"{opp_rank1}{opp_rank2}{suffix}"
+                # ハンド表示
+                if len(opp_hand) == 2:  # ペア
+                    display_hand = f"{opp_hand[0]}♦ {opp_hand[1]}♣"
+                    hand_type = "ポケットペア"
+                elif opp_hand[-1] == 's':  # スーテッド
+                    display_hand = f"{opp_hand[0]}♦ {opp_hand[1]}♦"
+                    hand_type = "スーテッド"
+                else:  # オフスート
+                    display_hand = f"{opp_hand[0]}♦ {opp_hand[1]}♣"
+                    hand_type = "オフスート"
+                
+                st.info(f"**{display_hand}** ({hand_type})")
             
             if st.button("🎯 勝率を計算", use_container_width=True):
                 st.markdown("---")
                 
-                # プリフロップ勝率テーブル（実際の値に近い）
-                win_rate = 50  # デフォルト
+                # データベースから勝率を取得
+                matchup_key = (my_hand, opp_hand)
+                reverse_key = (opp_hand, my_hand)
                 
-                if my_hand_type == "ポケットペア" and opp_hand_type == "ポケットペア":
-                    rank_values = {'A':14, 'K':13, 'Q':12, 'J':11, 'T':10, '9':9, '8':8, '7':7, '6':6, '5':5, '4':4, '3':3, '2':2}
-                    if rank_values[my_rank] > rank_values[opp_rank]:
-                        win_rate = 81
-                    elif rank_values[my_rank] < rank_values[opp_rank]:
-                        win_rate = 19
+                if matchup_key in matchup_database:
+                    win_rate, lose_rate = matchup_database[matchup_key]
+                elif reverse_key in matchup_database:
+                    lose_rate, win_rate = matchup_database[reverse_key]
+                else:
+                    # データベースにない場合は近似値を計算
+                    # ペアの強さを数値化
+                    def hand_strength(hand):
+                        rank_values = {'A':14, 'K':13, 'Q':12, 'J':11, 'T':10, 
+                                     '9':9, '8':8, '7':7, '6':6, '5':5, '4':4, '3':3, '2':2}
+                        
+                        if len(hand) == 2:  # ペア
+                            return rank_values[hand[0]] * 2 + 20
+                        else:
+                            r1, r2 = hand[0], hand[1]
+                            base = rank_values[r1] + rank_values[r2]
+                            if hand[-1] == 's':  # スーテッド
+                                base += 2
+                            return base
+                    
+                    my_strength = hand_strength(my_hand)
+                    opp_strength = hand_strength(opp_hand)
+                    
+                    # ペア vs 非ペア
+                    if len(my_hand) == 2 and len(opp_hand) > 2:
+                        base_rate = 55
+                        if my_hand == "AA":
+                            base_rate = 85
+                        elif my_hand in ["KK", "QQ"]:
+                            base_rate = 72
+                        elif my_hand in ["JJ", "TT"]:
+                            base_rate = 57
+                        
+                        # 相手のハンドの強さで調整
+                        if "A" in opp_hand or "K" in opp_hand:
+                            base_rate -= 5
+                        if opp_hand[-1] == 's':
+                            base_rate -= 2
+                        
+                        win_rate = base_rate
+                    elif len(my_hand) > 2 and len(opp_hand) == 2:
+                        base_rate = 45
+                        if opp_hand == "AA":
+                            base_rate = 15
+                        elif opp_hand in ["KK", "QQ"]:
+                            base_rate = 28
+                        elif opp_hand in ["JJ", "TT"]:
+                            base_rate = 43
+                        
+                        if "A" in my_hand or "K" in my_hand:
+                            base_rate += 5
+                        if my_hand[-1] == 's':
+                            base_rate += 2
+                        
+                        win_rate = base_rate
                     else:
-                        win_rate = 50
+                        # 同じタイプ同士の場合は強さの差で計算
+                        diff = my_strength - opp_strength
+                        win_rate = 50 + min(max(diff * 3, -40), 40)
+                    
+                    lose_rate = 100 - win_rate
                 
-                elif my_hand_type == "ポケットペア" and opp_hand_type != "ポケットペア":
-                    win_rate = 55 if my_rank in ['A', 'K', 'Q'] else 52
-                
-                elif my_hand_type != "ポケットペア" and opp_hand_type == "ポケットペア":
-                    win_rate = 45 if opp_rank not in ['A', 'K', 'Q'] else 48
-                
-                else:  # 両方非ペア
-                    if my_hand_type == "スーテッド" and opp_hand_type == "オフスート":
-                        win_rate = 52
-                    elif my_hand_type == "オフスート" and opp_hand_type == "スーテッド":
-                        win_rate = 48
-                
-                tie_rate = 2
-                lose_rate = 100 - win_rate - tie_rate
+                tie_rate = max(0, 100 - win_rate - lose_rate)
+                if tie_rate == 0 and win_rate + lose_rate < 100:
+                    tie_rate = 100 - win_rate - lose_rate
                 
                 # 結果表示
                 col1, col2, col3 = st.columns(3)
+                
                 with col1:
                     st.success("**勝率**")
                     st.markdown(f"# {win_rate}%")
+                    st.progress(win_rate / 100)
+                
                 with col2:
-                    st.info("**引き分け**")
-                    st.markdown(f"# {tie_rate}%")
+                    if tie_rate > 0:
+                        st.info("**引き分け**")
+                        st.markdown(f"# {tie_rate}%")
+                        st.progress(tie_rate / 100)
+                
                 with col3:
                     st.error("**敗率**")
                     st.markdown(f"# {lose_rate}%")
+                    st.progress(lose_rate / 100)
                 
+                # マッチアップ情報
                 st.markdown("---")
-                st.info(f"**マッチアップ**: {my_display} vs {opp_display}")
+                st.markdown(f"### 📊 マッチアップ: **{my_hand}** vs **{opp_hand}**")
+                
+                # アドバイス
+                if win_rate >= 70:
+                    st.success("💪 非常に有利なマッチアップです！積極的にプレイしましょう。")
+                elif win_rate >= 55:
+                    st.info("👍 有利なマッチアップです。")
+                elif win_rate >= 45:
+                    st.warning("⚖️ ほぼ互角のマッチアップです。ポジションと状況を考慮しましょう。")
+                else:
+                    st.error("⚠️ 不利なマッチアップです。慎重にプレイしましょう。")
         
         with calc_tabs[2]:
             st.markdown("#### 📈 ポーカーの役・確率一覧")
