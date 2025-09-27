@@ -1822,7 +1822,7 @@ def lesson_page():
         
             # オッズ計算
             st.markdown("---")
-            st.markdown("#### 💰 ポットオッズ判断")
+            st.markdown("#### 💰 ポットオッズ判断(フロップ)")
         
             col1, col2 = st.columns(2)
         
@@ -1847,7 +1847,7 @@ def lesson_page():
                     st.caption(f"改善確率（{turn_or_river_prob:.1f}%） vs 必要勝率（{pot_odds:.1f}%）")
         with calc_tabs[1]:
             st.markdown("#### ⚔️ ハンド vs ハンド勝率計算")
-            st.info("特定のハンド同士の勝率をシミュレーションします")
+            st.info("特定のハンド同士の勝率をシミュレーションします(致命的バグあり。改修中)")
         
             # カードの定義
             ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
